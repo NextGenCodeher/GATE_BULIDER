@@ -6,102 +6,36 @@ import plotly.graph_objects as go
 from qiskit.quantum_info import DensityMatrix, partial_trace
 import matplotlib.pyplot as plt
 
-# --- 1. Page Configuration ---
-st.set_page_config(layout="wide", page_title="QuantumLab Pro Ultra")
+# --- Page Configuration ---
+st.set_page_config(layout="wide", page_title="Quantum Circuit Simulator")
 
-# --- 2. Professional Bluish-Light & High-Contrast CSS ---
-st.markdown("""
-    <style>
-        /* Base Background: Premium Soft Light Blue Gradient */
-        .stApp {
-            background: linear-gradient(135deg, #E0F2FE 0%, #F8FAFC 100%);
-        }
-        
-        /* Sidebar: Deep Professional Blue-Violet Gradient */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #1E3A8A 0%, #1E1B4B 100%) !important;
-            border-right: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        /* Sidebar Text: Soft White for dark background contrast */
-        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, 
-        [data-testid="stSidebar"] label, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-            color: #F0F9FF !important;
-        }
+# --- Gate Definitions ---
+GATE_DEFINITIONS = {
+    'I': {'name': 'Identity', 'color': '#6c757d'},
+    'H': {'name': 'Hadamard', 'color': '#0d6efd'},
+    'X': {'name': 'Pauli-X', 'color': '#dc3545'},
+    'Y': {'name': 'Pauli-Y', 'color': '#dc3545'},
+    'Z': {'name': 'Pauli-Z', 'color': '#dc3545'},
+    'S': {'name': 'S Gate', 'color': '#ffc107'},
+    'T': {'name': 'T Gate', 'color': '#ffc107'},
+    '●': {'name': 'Control', 'color': '#198754'},
+    '⊕': 'Target (X)', # Special case for display
+}
 
-        /* Main Workspace: Frosted White Glassmorphism Cards */
-        .main-glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            padding: 30px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
-        }
+# --- Helper Functions & State Management ---
 
-        /* TYPOGRAPHY: STRICT BLACK FOR ALL MAIN CONTENT */
-        h1, h2, h3, p, label, .stMarkdown, b, strong, span, .stMetric label {
-            color: #000000 !important;
-            font-family: 'Inter', -apple-system, sans-serif;
-        }
-        
-        h1 { font-weight: 900 !important; letter-spacing: -1.5px; padding-bottom: 10px; }
-        h2, h3 { font-weight: 700 !important; margin-top: 20px; }
-
-        /* Sidebar Buttons: Custom Violet/Blue Styling */
-        [data-testid="stSidebar"] .stButton > button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white !important;
-            border-radius: 10px;
-        }
-        [data-testid="stSidebar"] .stButton > button:hover {
-            background: linear-gradient(90deg, #60A5FA, #A78BFA);
-            border: none;
-            transform: scale(1.02);
-        }
-
-        /* Grid Buttons: Main Workspace (Black Text) */
-        .main-glass-card .stButton > button {
-            background: #FFFFFF;
-            border: 1px solid #CBD5E1;
-            color: #000000 !important;
-            font-weight: 700;
-            border-radius: 10px;
-        }
-        .main-glass-card .stButton > button:hover {
-            border-color: #2563EB;
-            color: #2563EB !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-        }
-
-        /* Primary Execution Button */
-        div.stButton > button:first-child[kind="primary"] {
-            background: linear-gradient(90deg, #2563EB, #7C3AED) !important;
-            border: none !important;
-            color: white !important;
-            font-weight: 800 !important;
-            height: 3.5rem;
-            width: 100%;
-            font-size: 1.1rem !important;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4) !important;
-            border-radius: 15px !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- State Management ---
 def initialize_state(num_qubits, num_steps):
+    """Initializes or resets the circuit grid and active gate."""
     st.session_state.circuit_grid = [['I'] * num_steps for _ in range(num_qubits)]
     if 'active_gate' not in st.session_state:
         st.session_state.active_gate = 'H'
 
 def set_active_gate(gate_symbol):
+    """Callback to set the currently selected gate."""
     st.session_state.active_gate = gate_symbol
 
 def place_gate(q, t):
+    """Callback to place the active gate on the grid."""
     active = st.session_state.active_gate
     if active == 'CNOT':
         st.session_state.circuit_grid[q][t] = '●'
@@ -112,114 +46,203 @@ def place_gate(q, t):
     else:
         st.session_state.circuit_grid[q][t] = active
 
-def create_bloch_sphere(vector):
-    x, y, z = vector
+def create_interactive_bloch_sphere(bloch_vector, title=""):
+    """Creates an interactive Bloch sphere plot using Plotly."""
+    x, y, z = bloch_vector
     fig = go.Figure()
-    u, v = np.mgrid[0:2*np.pi:50j, 0:np.pi:25j]
-    fig.add_trace(go.Surface(x=np.cos(u)*np.sin(v), y=np.sin(u)*np.sin(v), z=np.cos(v),
-                             colorscale=[[0, '#E2E8F0'], [1, '#E2E8F0']], opacity=0.3, showscale=False))
-    fig.add_trace(go.Cone(x=[x], y=[y], z=[z], u=[x], v=[y], w=[z], sizemode="absolute", sizeref=0.2, 
-                          anchor="tip", colorscale=[[0, '#2563EB'], [1, '#7C3AED']], showscale=False))
-    fig.update_layout(scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False)),
-                      margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor='rgba(0,0,0,0)', height=280)
+    u, v = np.mgrid[0:2*np.pi:100j, 0:np.pi:100j]
+    sphere_x = np.cos(u) * np.sin(v)
+    sphere_y = np.sin(u) * np.sin(v)
+    sphere_z = np.cos(v)
+    fig.add_trace(go.Surface(x=sphere_x, y=sphere_y, z=sphere_z,
+                             colorscale=[[0, 'lightblue'], [1, 'lightblue']],
+                             opacity=0.3, showscale=False))
+    fig.add_trace(go.Scatter3d(x=[-1.2, 1.2], y=[0, 0], z=[0, 0], mode='lines', line=dict(color='grey')))
+    fig.add_trace(go.Scatter3d(x=[0, 0], y=[-1.2, 1.2], z=[0, 0], mode='lines', line=dict(color='grey')))
+    fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[-1.2, 1.2], mode='lines', line=dict(color='grey')))
+    fig.add_trace(go.Cone(x=[x], y=[y], z=[z], u=[x], v=[y], w=[z],
+                          sizemode="absolute", sizeref=0.1, anchor="tip",
+                          showscale=False, colorscale=[[0, 'red'], [1, 'red']]))
+    fig.update_layout(
+        title=dict(text=title, x=0.5), showlegend=False,
+        scene=dict(xaxis=dict(showticklabels=False, showgrid=False, zeroline=False, backgroundcolor="rgba(0,0,0,0)"),
+                   yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, backgroundcolor="rgba(0,0,0,0)"),
+                   zaxis=dict(showticklabels=False, showgrid=False, zeroline=False, backgroundcolor="rgba(0,0,0,0)"),
+                   aspectmode='cube'),
+        margin=dict(l=0, r=0, b=0, t=40))
     return fig
 
-# --- Side Navigation ---
+# --- Streamlit UI ---
+st.title('⚛️ Quantum Circuit Simulator')
+st.markdown("Select a gate from the sidebar, then click on the grid to place it.")
+
+# --- Sidebar ---
 with st.sidebar:
-    st.markdown("# ⚛️ Quantum Controls")
-    num_qubits = st.slider('Number of Qubits', 1, 5, 2)
-    num_steps = st.slider('Circuit Depth', 5, 15, 8)
+    st.header('Circuit Controls')
+    num_qubits = st.slider('Number of Qubits', 1, 5, 2, key='num_qubits_slider')
+    num_steps = st.slider('Circuit Depth', 5, 15, 10, key='num_steps_slider')
+    num_shots = st.slider('Number of Shots (for measurement)', 100, 4000, 1024, key='shots_slider')
     
-    if 'circuit_grid' not in st.session_state or len(st.session_state.circuit_grid) != num_qubits:
+    if 'circuit_grid' not in st.session_state or len(st.session_state.circuit_grid) != num_qubits or len(st.session_state.circuit_grid[0]) != num_steps:
         initialize_state(num_qubits, num_steps)
 
-    st.markdown("### Gate Palette")
-    st.caption(f"Current Gate Selection: {st.session_state.active_gate}")
-    p_cols = st.columns(2)
-    gates = ['H', 'X', 'Y', 'Z', 'S', 'T', 'CNOT', 'I']
-    for i, g in enumerate(gates):
-        p_cols[i%2].button(g, key=f"p_{g}", on_click=set_active_gate, args=(g,), use_container_width=True)
-    
-    st.markdown("---")
-    if st.button("Reset Designer", use_container_width=True):
+    if st.button('Reset Circuit', use_container_width=True):
         initialize_state(num_qubits, num_steps)
-        st.rerun()
+        st.success("Circuit reset!")
 
-# --- Main Workspace ---
-st.title("Quantum Circuit Simulator")
-st.markdown("##### Build and simulate advanced quantum circuits in real-time.")
+    st.header("Gate Palette")
+    st.write("Current Gate: **" + st.session_state.active_gate + "**")
+    
+    gate_palette_cols = st.columns(2)
+    palette_gates = ['H', 'X', 'Y', 'Z', 'S', 'T', 'I', 'CNOT']
+    for i, gate in enumerate(palette_gates):
+        gate_palette_cols[i % 2].button(
+            gate, on_click=set_active_gate, args=(gate,), use_container_width=True
+        )
+    if st.session_state.active_gate == '⊕':
+        st.info("Now, click a grid cell to place the CNOT Target (⊕).")
 
-# Circuit Designer Workspace
-st.markdown('<div class="main-glass-card">', unsafe_allow_html=True)
-st.subheader("Circuit Builder")
-grid_cols = st.columns([0.6] + [1]*num_steps)
+# --- Main Circuit Grid UI ---
+st.header('Quantum Circuit')
+grid_cols = st.columns(num_steps + 1)
+grid_cols[0].markdown("---") 
 
-grid_cols[0].write("")
 for i in range(num_steps):
-    grid_cols[i+1].markdown(f"<center><b style='color:#64748B'>{i}</b></center>", unsafe_allow_html=True)
+    grid_cols[i + 1].markdown(f"<p style='text-align: center;'>{i}</p>", unsafe_allow_html=True)
 
 for q in range(num_qubits):
-    grid_cols[0].markdown(f"<p style='margin-top:10px; font-weight:800;'>|q{q}⟩</p>", unsafe_allow_html=True)
+    grid_cols[0].markdown(f"`|q{q}⟩`")
     for t in range(num_steps):
-        label = st.session_state.circuit_grid[q][t]
-        grid_cols[t+1].button(label, key=f"grid_{q}_{t}", on_click=place_gate, args=(q, t), use_container_width=True)
+        gate_in_cell = st.session_state.circuit_grid[q][t]
+        grid_cols[t + 1].button(
+            gate_in_cell, key=f"cell_{q}_{t}", on_click=place_gate, args=(q, t), use_container_width=True
+        )
 
-st.markdown("<br>", unsafe_allow_html=True)
-if st.button('Execute Simulation', type="primary"):
+# --- Execution Logic ---
+if st.button('▶️ Execute', type="primary", use_container_width=True):
     try:
-        qc = QuantumCircuit(num_qubits)
-        for t in range(num_steps):
-            c, tr = -1, -1
-            for q in range(num_qubits):
-                if st.session_state.circuit_grid[q][t] == '●': c = q
-                if st.session_state.circuit_grid[q][t] == '⊕': tr = q
-            if c != -1 and tr != -1: qc.cx(c, tr)
-            else:
+        with st.spinner("Simulating circuit..."):
+            # --- Build the Circuit from the Grid ---
+            qc = QuantumCircuit(num_qubits)
+            for t in range(num_steps):
+                control_qubit = -1
+                target_qubit = -1
+                # First pass to find CNOTs in the current time step
                 for q in range(num_qubits):
-                    g = st.session_state.circuit_grid[q][t]
-                    if g not in ['I', '●', '⊕']: getattr(qc, g.lower())(q)
-        
-        st.session_state.last_results = {
-            'qc': qc,
-            'counts': Aer.get_backend('qasm_simulator').run(qc.copy().measure_all(), shots=1024).result().get_counts(),
-            'sv': Aer.get_backend('statevector_simulator').run(qc).result().get_statevector()
-        }
+                    gate = st.session_state.circuit_grid[q][t]
+                    if gate == '●':
+                        control_qubit = q
+                    elif gate == '⊕':
+                        target_qubit = q
+                
+                # Apply gates for the current time step
+                if control_qubit != -1 and target_qubit != -1:
+                    qc.cx(control_qubit, target_qubit)
+                elif control_qubit != -1 or target_qubit != -1:
+                    # If only one part of CNOT is present, raise an error
+                    raise ValueError(f"Incomplete CNOT gate in time step {t}.")
+                else:
+                    # Apply single-qubit gates if no CNOT in this step
+                    for q in range(num_qubits):
+                        gate = st.session_state.circuit_grid[q][t]
+                        if gate != 'I' and gate != '●' and gate != '⊕':
+                            getattr(qc, gate.lower())(q)
+            
+            st.success("✅ Simulation complete!")
+
+            # --- Circuit Visualization ---
+            st.header("Circuit Diagram")
+            fig, ax = plt.subplots()
+            qc.draw('mpl', ax=ax, style='iqx')
+            st.pyplot(fig)
+            plt.close(fig)
+            
+            # --- Measurement Simulation & Histogram ---
+            st.header("Measurement Outcomes")
+            qc_measured = qc.copy()
+            qc_measured.measure_all()
+            
+            qasm_backend = Aer.get_backend('qasm_simulator')
+            qasm_job = qasm_backend.run(qc_measured, shots=num_shots)
+            counts = qasm_job.result().get_counts()
+            
+            if counts:
+                # Find the outcome with the highest count
+                most_likely_outcome = max(counts, key=counts.get)
+                st.metric(label="Most Probable Classical Outcome", value=most_likely_outcome)
+
+                # --- NEW CODE ADDED HERE ---
+                qubit_order_str = "".join([f"q{i}" for i in range(num_qubits - 1, -1, -1)])
+                st.info(f"💡 **How to Read the Output:** The bit string is ordered from highest to lowest qubit index ({qubit_order_str}). Qubit q0 is the rightmost digit.")
+                # --- END OF NEW CODE ---
+
+                sorted_counts = dict(sorted(counts.items()))
+                hist_fig = go.Figure(go.Bar(
+                    x=list(sorted_counts.keys()), 
+                    y=list(sorted_counts.values()),
+                    marker_color='indianred'
+                ))
+                hist_fig.update_layout(
+                    title=f"Results from {num_shots} shots",
+                    xaxis_title="Outcome (Classical Bit String)",
+                    yaxis_title="Counts",
+                )
+                st.plotly_chart(hist_fig, use_container_width=True)
+            else:
+                st.warning("No measurement outcomes were recorded.")
+
+            # --- Ideal State Simulation & Per-Qubit Results ---
+            st.header("Ideal State Analysis (per Qubit)")
+            st.markdown("This shows the theoretical quantum state of each qubit *before* measurement.")
+            
+            statevector_backend = Aer.get_backend('statevector_simulator')
+            job = statevector_backend.run(qc)
+            final_state = job.result().get_statevector()
+            final_dm = DensityMatrix(final_state)
+
+            # --- Display Per-Qubit Information ---
+            cols = st.columns(num_qubits)
+            for i in range(num_qubits):
+                # Isolate the density matrix for the current qubit
+                q_list = list(range(num_qubits))
+                q_list.remove(i)
+                reduced_dm = partial_trace(final_dm, q_list)
+                
+                # Calculate Bloch vector components
+                x = np.real(np.trace(reduced_dm.data @ np.array([[0, 1], [1, 0]])))
+                y = np.real(np.trace(reduced_dm.data @ np.array([[0, -1j], [1j, 0]])))
+                z = np.real(np.trace(reduced_dm.data @ np.array([[1, 0], [0, -1]])))
+                bloch_vector = [x, y, z]
+
+                # Calculate probabilities from the diagonal of the reduced density matrix
+                prob_0 = np.real(reduced_dm.data[0, 0])
+                prob_1 = np.real(reduced_dm.data[1, 1])
+
+                # Calculate purity
+                purity = np.real(np.trace(reduced_dm.data @ reduced_dm.data))
+
+                with cols[i]:
+                    st.subheader(f"Qubit {i}")
+
+                    # Display Bloch Sphere first
+                    fig = create_interactive_bloch_sphere(bloch_vector)
+                    st.plotly_chart(fig, use_container_width=True, key=f"bloch_sphere_{i}")
+
+                    # Display analysis below the sphere
+                    st.text(f"|0⟩: {prob_0:.3f}")
+                    st.progress(prob_0)
+                    st.text(f"|1⟩: {prob_1:.3f}")
+                    st.progress(prob_1)
+                    
+                    st.metric(label="Purity", value=f"{purity:.3f}")
+
+                    with st.expander("Details"):
+                        st.text(f"Bloch Vector: ({x:.3f}, {y:.3f}, {z:.3f})")
+                        st.text("Reduced Density Matrix:")
+                        # Use st.dataframe to display the matrix cleanly
+                        st.dataframe(reduced_dm.data)
+
+    except ValueError as e:
+        st.error(f"Circuit Error: {e}")
     except Exception as e:
-        st.error(f"Hardware Logic Error: {e}")
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Results Section
-if 'last_results' in st.session_state:
-    res = st.session_state.last_results
-    col_l, col_r = st.columns([1, 1])
-    
-    with col_l:
-        st.markdown('<div class="main-glass-card">', unsafe_allow_html=True)
-        st.subheader("Physical Mapping")
-        fig, ax = plt.subplots(figsize=(6, 4))
-        res['qc'].draw('mpl', ax=ax, style='iqx')
-        st.pyplot(fig)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    with col_r:
-        st.markdown('<div class="main-glass-card">', unsafe_allow_html=True)
-        st.subheader("State Probabilities")
-        st.bar_chart(res['counts'], color="#2563EB")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # Bloch Sphere Row
-    st.markdown('<h2 style="text-align:center;">Quantum Phase Space</h2>', unsafe_allow_html=True)
-    dm = DensityMatrix(res['sv'])
-    b_cols = st.columns(num_qubits)
-    for i in range(num_qubits):
-        with b_cols[i]:
-            st.markdown('<div class="main-glass-card">', unsafe_allow_html=True)
-            st.markdown(f"<h3 style='text-align:center;'>Qubit {i}</h3>", unsafe_allow_html=True)
-            q_list = list(range(num_qubits)); q_list.remove(i)
-            rdm = partial_trace(dm, q_list)
-            x = np.real(np.trace(rdm.data @ np.array([[0, 1], [1, 0]])))
-            y = np.real(np.trace(rdm.data @ np.array([[0, -1j], [1j, 0]])))
-            z = np.real(np.trace(rdm.data @ np.array([[1, 0], [0, -1]])))
-            st.plotly_chart(create_bloch_sphere([x, y, z]), use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.error(f"An unexpected error occurred: {e}")
