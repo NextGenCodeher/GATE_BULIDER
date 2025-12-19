@@ -28,10 +28,16 @@ st.markdown("""
             border-right: 1px solid #D1DBE5;
         }
 
-        /* Headers */
-        h1, h2, h3 {
+        /* Headers and Instruction Text Color */
+        h1, h2, h3, .custom-instruction {
             color: #1E3A5F !important;
             font-weight: 700 !important;
+        }
+        
+        .custom-instruction {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: block;
         }
 
         /* Metric Cards */
@@ -108,7 +114,6 @@ def create_interactive_bloch_sphere(bloch_vector, title=""):
     sphere_x = np.cos(u) * np.sin(v)
     sphere_y = np.sin(u) * np.sin(v)
     sphere_z = np.cos(v)
-    # Sphere colors updated to match bluish theme
     fig.add_trace(go.Surface(x=sphere_x, y=sphere_y, z=sphere_z,
                              colorscale=[[0, '#DBEAFE'], [1, '#DBEAFE']],
                              opacity=0.3, showscale=False))
@@ -153,7 +158,8 @@ with st.sidebar:
 
 # --- Main Interface ---
 st.title('⚛️ Quantum Circuit Simulator')
-st.markdown("Select a gate from the sidebar, then click on the grid to place it")
+# Updated Instruction Text with custom CSS class for color matching
+st.markdown('<span class="custom-instruction">Select a gate from the sidebar, then click on the grid to place it.</span>', unsafe_allow_html=True)
 
 # Grid Display
 st.subheader("Quantum Circuit")
@@ -170,7 +176,7 @@ with grid_container:
             cols[t+1].button(gate, key=f"g_{q}_{t}", on_click=place_gate, args=(q, t), use_container_width=True)
 
 st.markdown("---")
-if st.button('▶️ EXECUTE ANALYSIS', type="primary", use_container_width=True):
+if st.button('▶️ EXECUTE ', type="primary", use_container_width=True):
     try:
         with st.spinner("Processing Quantum State..."):
             # Circuit Construction
