@@ -9,90 +9,95 @@ import matplotlib.pyplot as plt
 # --- Page Configuration ---
 st.set_page_config(
     layout="wide", 
-    page_title="Quantum Nebula Designer",
-    page_icon="🔮"
+    page_title="Quantum Designer | Hybrid Edition",
+    page_icon="⚛️"
 )
 
-# --- Deep Violet & Purple 3D Theme CSS ---
+# --- Hybrid Violet & Paper White CSS ---
 st.markdown("""
     <style>
-        /* Main Background - Deep Nebula Gradient */
+        /* Global Background - Clean Studio White */
         .stApp {
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            color: #E0E0E0;
-            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FC;
+            font-family: 'Inter', -apple-system, sans-serif;
         }
         
-        /* Sidebar - Glassmorphism Violet */
+        /* Sidebar - Deep Violet Gradient */
         section[data-testid="stSidebar"] {
-            background-color: rgba(31, 27, 65, 0.95) !important;
-            border-right: 1px solid #7f5af0;
+            background: linear-gradient(180deg, #2D1B69 0%, #160B39 100%) !important;
+            border-right: 2px solid #7C3AED;
+            color: white;
+        }
+        
+        /* Sidebar text/headers */
+        section[data-testid="stSidebar"] h1, 
+        section[data-testid="stSidebar"] h2, 
+        section[data-testid="stSidebar"] h3,
+        section[data-testid="stSidebar"] .stMarkdown p {
+            color: #E9D5FF !important;
         }
 
-        /* Titles and Instruction Text */
+        /* Main Page Headers - Deep Indigo */
         h1, h2, h3 {
-            color: #bd93f9 !important;
-            text-shadow: 0px 0px 10px rgba(189, 147, 249, 0.5);
+            color: #1E1B4B !important;
             font-weight: 800 !important;
         }
         
         .custom-instruction {
-            color: #bd93f9;
+            color: #4338CA;
             font-size: 1.1rem;
             font-weight: 500;
             margin-bottom: 1.5rem;
             display: block;
         }
 
-        /* 3D-effect Metric Cards */
-        div[data-testid="metric-container"] {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(127, 90, 240, 0.3);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            backdrop-filter: blur(4px);
-        }
-
-        /* Buttons - Interactive Purple 3D Style */
+        /* Workspace Grid Buttons - Clean White with Violet Hover */
         .stButton>button {
-            border-radius: 10px;
-            border: 1px solid #7f5af0;
-            background-color: rgba(127, 90, 240, 0.1);
-            color: #fffffe;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 6px;
+            border: 1px solid #E2E8F0;
+            background-color: #FFFFFF;
+            color: #1E293B;
+            transition: all 0.2s ease;
             font-weight: 600;
-            box-shadow: 0 4px 0px #4b30a1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         .stButton>button:hover {
-            transform: translateY(-2px);
-            background-color: #7f5af0;
+            border-color: #7C3AED;
+            color: #7C3AED;
+            background-color: #F5F3FF;
+            transform: translateY(-1px);
+        }
+
+        /* Sidebar Buttons - Light Violet Style */
+        section[data-testid="stSidebar"] .stButton>button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            color: #F5F3FF;
+        }
+
+        section[data-testid="stSidebar"] .stButton>button:hover {
+            background-color: #7C3AED;
             color: white;
-            box-shadow: 0 6px 15px rgba(127, 90, 240, 0.4);
+            border-color: #A78BFA;
         }
 
-        .stButton>button:active {
-            transform: translateY(2px);
-            box-shadow: 0 0px 0px #4b30a1;
-        }
-
-        /* Primary Action Button - Neon Violet */
+        /* Execution Button - Solid Violet */
         div[data-testid="stButton"] button[kind="primary"] {
-            background: linear-gradient(45deg, #7f5af0, #bd93f9) !important;
+            background-color: #4F46E5 !important;
             border: none !important;
             color: white !important;
-            box-shadow: 0 0 20px rgba(127, 90, 240, 0.6) !important;
+            padding: 0.6rem 2rem !important;
+            font-size: 16px !important;
         }
 
-        /* Inputs and Sliders */
-        .stSlider [data-baseweb="slider"] {
-            margin-bottom: 25px;
-        }
-
-        /* Grid specific styling */
-        .stProgress > div > div > div > div {
-            background-color: #bd93f9;
+        /* Metrics & Cards */
+        div[data-testid="metric-container"] {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
     </style>
     """, unsafe_allow_html=True)
@@ -125,22 +130,17 @@ def create_interactive_bloch_sphere(bloch_vector):
     sphere_x = np.cos(u) * np.sin(v)
     sphere_y = np.sin(u) * np.sin(v)
     sphere_z = np.cos(v)
-    
-    # Glowy Violet Sphere
     fig.add_trace(go.Surface(x=sphere_x, y=sphere_y, z=sphere_z,
-                             colorscale=[[0, '#24243e'], [1, '#7f5af0']],
+                             colorscale=[[0, '#F5F3FF'], [1, '#DDD6FE']],
                              opacity=0.4, showscale=False))
     
-    # Neon Axes
-    axis_style = dict(color='#bd93f9', width=3)
-    fig.add_trace(go.Scatter3d(x=[-1.2, 1.2], y=[0, 0], z=[0, 0], mode='lines', line=axis_style))
-    fig.add_trace(go.Scatter3d(x=[0, 0], y=[-1.2, 1.2], z=[0, 0], mode='lines', line=axis_style))
-    fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[-1.2, 1.2], mode='lines', line=axis_style))
+    fig.add_trace(go.Scatter3d(x=[-1.1, 1.1], y=[0, 0], z=[0, 0], mode='lines', line=dict(color='#A5B4FC', width=2)))
+    fig.add_trace(go.Scatter3d(x=[0, 0], y=[-1.1, 1.1], z=[0, 0], mode='lines', line=dict(color='#A5B4FC', width=2)))
+    fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[-1.1, 1.1], mode='lines', line=dict(color='#A5B4FC', width=2)))
     
-    # 3D Pointer
     fig.add_trace(go.Cone(x=[x], y=[y], z=[z], u=[x], v=[y], w=[z],
-                          sizemode="absolute", sizeref=0.2, anchor="tip",
-                          showscale=False, colorscale=[[0, '#ff00ff'], [1, '#bd93f9']]))
+                          sizemode="absolute", sizeref=0.15, anchor="tip",
+                          showscale=False, colorscale=[[0, '#4F46E5'], [1, '#7C3AED']]))
     
     fig.update_layout(
         scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectmode='cube'),
@@ -152,7 +152,7 @@ def create_interactive_bloch_sphere(bloch_vector):
 
 # --- Sidebar ---
 with st.sidebar:
-    st.header('Nebula Controls')
+    st.markdown("## ⚙️ Designer Settings")
     num_qubits = st.slider('Qubits', 1, 5, 2)
     num_steps = st.slider('Depth', 5, 15, 10)
     num_shots = st.slider('Shots', 100, 4000, 1024)
@@ -160,38 +160,38 @@ with st.sidebar:
     if 'circuit_grid' not in st.session_state or len(st.session_state.circuit_grid) != num_qubits:
         initialize_state(num_qubits, num_steps)
 
-    if st.button('Clear Circuit', use_container_width=True):
+    if st.button('Reset Grid', use_container_width=True):
         initialize_state(num_qubits, num_steps)
         st.rerun()
 
-    st.markdown("### Gate Palette")
+    st.markdown("### 🛠️ Gate Palette")
+    st.caption(f"Active Gate: {st.session_state.active_gate}")
     palette_gates = ['H', 'X', 'Y', 'Z', 'S', 'T', 'I', 'CNOT']
     cols = st.columns(2)
     for i, gate in enumerate(palette_gates):
         cols[i % 2].button(gate, on_click=set_active_gate, args=(gate,), use_container_width=True)
 
 # --- Main Interface ---
-st.title('⚛️ Quantum Nebula Simulator')
+st.title('⚛️ Quantum Circuit Simulator')
 st.markdown('<span class="custom-instruction">Select a gate from the sidebar, then click on the grid to place it.</span>', unsafe_allow_html=True)
 
 # Grid Display
-st.subheader("Interactive Workspace")
-grid_container = st.container()
-with grid_container:
+st.subheader("Circuit Construction Grid")
+with st.container():
     cols = st.columns([0.6] + [1] * num_steps)
     for t in range(num_steps):
-        cols[t+1].markdown(f"<p style='text-align:center; color:#bd93f9; font-weight:bold;'>{t}</p>", unsafe_allow_html=True)
+        cols[t+1].markdown(f"<p style='text-align:center; color:#6366F1; font-weight:bold;'>{t}</p>", unsafe_allow_html=True)
     
     for q in range(num_qubits):
-        cols[0].markdown(f"<h3 style='margin:0; padding-top:5px;'>Q{q}</h3>", unsafe_allow_html=True)
+        cols[0].markdown(f"<p style='margin-top:8px; font-weight:700;'>Qubit {q}</p>", unsafe_allow_html=True)
         for t in range(num_steps):
             gate = st.session_state.circuit_grid[q][t]
             cols[t+1].button(gate, key=f"g_{q}_{t}", on_click=place_gate, args=(q, t), use_container_width=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
-if st.button('🚀 RUN NEBULA ENGINE', type="primary", use_container_width=True):
+if st.button('▶️ EXECUTE SIMULATION', type="primary", use_container_width=True):
     try:
-        with st.spinner("Decoding quantum interference..."):
+        with st.spinner("Processing Quantum State..."):
             qc = QuantumCircuit(num_qubits)
             for t in range(num_steps):
                 ctrl, targ = -1, -1
@@ -206,26 +206,28 @@ if st.button('🚀 RUN NEBULA ENGINE', type="primary", use_container_width=True)
                         if gate not in ['I', '●', '⊕']:
                             getattr(qc, gate.lower())(q)
 
-            # Results
+            # Results Section
+            st.markdown("---")
+            st.header("Simulation Analysis")
             col1, col2 = st.columns([1, 1])
             with col1:
-                st.subheader("Circuit Schematic")
-                fig, ax = plt.subplots(facecolor='#1f1b41')
-                qc.draw('mpl', ax=ax, style={'backgroundcolor': '#1f1b41', 'textcolor': '#bd93f9', 'linecolor': '#7f5af0'})
+                st.subheader("Visual Circuit")
+                fig, ax = plt.subplots(facecolor='#F8F9FC')
+                qc.draw('mpl', ax=ax, style='iqx')
                 st.pyplot(fig)
             
             with col2:
-                st.subheader("Simulation Results")
+                st.subheader("Measurement Statistics")
                 qc_m = qc.copy()
                 qc_m.measure_all()
                 counts = Aer.get_backend('qasm_simulator').run(qc_m, shots=num_shots).result().get_counts()
-                st.metric("Dominant State", max(counts, key=counts.get))
-                hist = go.Figure(go.Bar(x=list(counts.keys()), y=list(counts.values()), marker=dict(color='#bd93f9', line=dict(color='#7f5af0', width=1))))
-                hist.update_layout(height=250, margin=dict(l=0,r=0,b=0,t=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#bd93f9"))
+                st.metric("Peak Probability State", max(counts, key=counts.get))
+                hist = go.Figure(go.Bar(x=list(counts.keys()), y=list(counts.values()), marker_color='#6366F1'))
+                hist.update_layout(height=250, margin=dict(l=0,r=0,b=0,t=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(hist, use_container_width=True)
 
-            # Bloch Spheres (3D Model Feel)
-            st.markdown("### 3D Quantum State Mapping")
+            # Bloch Spheres
+            st.markdown("### Qubit State Visualization")
             sv = Aer.get_backend('statevector_simulator').run(qc).result().get_statevector()
             dm = DensityMatrix(sv)
             bloch_cols = st.columns(num_qubits)
@@ -237,12 +239,11 @@ if st.button('🚀 RUN NEBULA ENGINE', type="primary", use_container_width=True)
                 y = np.real(np.trace(rdm.data @ np.array([[0, -1j], [1j, 0]])))
                 z = np.real(np.trace(rdm.data @ np.array([[1, 0], [0, -1]])))
                 with bloch_cols[i]:
-                    st.markdown(f"<p style='text-align:center; color:#bd93f9;'><b>Qubit {i}</b></p>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='text-align:center;'><b>Qubit {i}</b></p>", unsafe_allow_html=True)
                     st.plotly_chart(create_interactive_bloch_sphere([x, y, z]), use_container_width=True, key=f"b_{i}")
                     st.progress(float(np.real(rdm.data[1, 1])))
 
     except Exception as e:
-        st.error(f"Engine Failure: {e}")
+        st.error(f"Error during execution: {e}")
 
-st.markdown("---")
-st.caption("Quantum Nebula v3.0 | Deep Space Design")
+st.caption("Quantum Designer v3.1 | Hybrid Studio Edition")
